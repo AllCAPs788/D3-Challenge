@@ -17,7 +17,7 @@ var height = svgHeight - margin.top - margin.bottom;
 // Create an SVG wrapper, append an SVG group that will hold our chart,
 // and shift the latter by left and top margins.
 var svg = d3
-  .select(".chart")
+  .select("#scatter")
   .append("svg")
   .attr("width", svgWidth)
   .attr("height", svgHeight);
@@ -29,7 +29,7 @@ var chartGroup = svg.append("g")
 
 // Initial Params
 var chosenXAxis = "poverty";
-
+var chosenYAxis = "healthcareLow"
 
   // Add X axis ("In Poverty (%)")
 
@@ -45,7 +45,7 @@ function xScale(state_Data, chosenXAxis) {
 
 }
 
-function renderAxes(newXScale, xAxis) {
+function renderXaxes(newXScale, xAxis) {
   var bottomAxis = d3.axisBottom(newXScale);
 
   xAxis.transition()
@@ -55,6 +55,27 @@ function renderAxes(newXScale, xAxis) {
   return xAxis;
 }
 
+function yScale(state_Data, chosenYAxis) {
+  // create scales
+  var yLinearScale = d3.scaleLinear()
+    .domain([d3.min(state_Data, d => d[chosenYAxis]) * 0.8,
+      d3.max(state_Data, d => d[chosenYAxis]) * 1.2
+    ])
+    .range([0, width]);
+
+  return yLinearScale;
+
+}
+
+function renderYaxes(newYScale, yAxis) {
+  var leftAxis = d3.axisLeft(newYScale);
+
+  yAxis.transition()
+    .duration(1000)
+    .call(leftAxis);
+
+  return yAxis;
+}
 
 //import csv
 
@@ -66,30 +87,30 @@ d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
     data.poverty = +data.poverty;
     data.healthcareLow = +data.healthcareLow;
     //data.num_albums = +data.num_albums;
-
+  });
   // Print the tvData
-  console.log(state_Data);
+  // console.log(state_Data);
 
 
   
   
-    svg.append("g")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x));
+  //   chartGroup.append("g")
+  //   .attr("transform", "translate(0," + height + ")")
+  //   .call(d3.axisLeft(xLinearScale));
 
-  // Add Y axis
-  var y = d3.scaleLinear()
-    .domain([0, d3.max(state_Data, d => d.healthcareLow)])
-    .range([ height, 0]);
-  svg.append("g")
-    .call(d3.axisLeft(y));
+  // // Add Y axis
+  // var y = d3.scaleLinear()
+  //   .domain([0, d3.max(state_Data, d => d.healthcareLow)])
+  //   .range([ height, 0]);
+  // svg.append("g")
+  //   .call(d3.axisLeft(y));
 
     
-      hairData.forEach(function(data) {
-        data.poverty = +data.poverty;
-        data.healthcareLow = +data.healthcareLow;
-      // console.log(poverty)
-      });
+  //     hairData.forEach(function(data) {
+  //       data.poverty = +data.poverty;
+  //       data.healthcareLow = +data.healthcareLow;
+  //     // console.log(poverty)
+  //     });
     
       // xLinearScale function above csv import
       var xLinearScale = xScale(state_Data, chosenXAxis);
@@ -115,7 +136,7 @@ d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
     
       // append initial circles
       var circlesGroup = chartGroup.selectAll("circle")
-        .data(hairData)
+        .data(state_Data)
         .enter()
         .append("circle")
         .attr("cx", d => xLinearScale(d[chosenXAxis]))
@@ -125,22 +146,24 @@ d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
         .attr("opacity", ".5");
     
       // Create group for two x-axis labels
-      // var labelsGroup = chartGroup.append("g")
-      //   .attr("transform", `translate(${width / 2}, ${height + 20})`);
+      var labelsGroup = chartGroup.append("g");
+        //.attr("transform", `translate(${width / 2}, ${height + 20})`);
     
-      var hairLengthLabel = labelsGroup.append("text")
+      var labelsGroupY = chartGroup.append("g");
+        //.attr("transform", `translate(${width / 2}, ${height + 20})`);
+      var povertyLabel = labelsGroup.append("text")
         .attr("x", 0)
         .attr("y", 20)
         .attr("value", "poverty") // value to grab for event listener
         .classed("active", true)
         .text("In Poverty (%)");
     
-      // var albumsLabel = labelsGroup.append("text")
-      //   .attr("x", 0)
-      //   .attr("y", 40)
-      //   .attr("value", "num_albums") // value to grab for event listener
-      //   .classed("inactive", true)
-      //   .text("# of Albums Released");
+      var yLabel = labelsGroup.append("text")
+        .attr("x", 0)
+        .attr("y", 40)
+        .attr("value", "healthcareLow") // value to grab for event listener
+        .classed("inactive", true)
+        .text("Lacks Healthcare (%)");
     
       // append y axis
       chartGroup.append("text")
@@ -158,7 +181,95 @@ d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
     .html(function(d) {
       return (`${d.healthcareLow}<br>${label} ${d[chosenXAxis]}`);
     });
-      
+    
+    
+    labelsGroup.selectAll("text")
+    .on("click", function() {
+      // get value of selection
+      var value = d3.select(this).attr("value");
+      if (value !== chosenXAxis) {
+
+        // replaces chosenXAxis with value
+        chosenXAxis = value;
+
+        // console.log(chosenXAxis)
+
+        // functions here found above csv import
+        // updates x scale for new data
+        xLinearScale = xScale(hairData, chosenXAxis);
+
+        // updates x axis with transition
+        xAxis = renderAxes(xLinearScale, xAxis);
+
+        // updates circles with new x values
+        circlesGroup = renderCircles(circlesGroup, xLinearScale, chosenXAxis);
+
+        // updates tooltips with new info
+        circlesGroup = updateToolTip(chosenXAxis, circlesGroup);
+
+        // changes classes to change bold text
+        if (chosenXAxis === "num_albums") {
+          povertyLabel
+            .classed("active", true)
+            .classed("inactive", false);
+          yLabel
+            .classed("active", false)
+            .classed("inactive", true);
+        }
+        else {
+          albumsLabel
+            .classed("active", false)
+            .classed("inactive", true);
+          hairLengthLabel
+            .classed("active", true)
+            .classed("inactive", false);
+        }
+      }
+    });
+
+    labelsGroupY.selectAll("text")
+    .on("click", function() {
+      // get value of selection
+      var value = d3.select(this).attr("value");
+      if (value !== chosenXAxis) {
+
+        // replaces chosenXAxis with value
+        chosenXAxis = value;
+
+        // console.log(chosenXAxis)
+
+        // functions here found above csv import
+        // updates x scale for new data
+        xLinearScale = xScale(hairData, chosenXAxis);
+
+        // updates x axis with transition
+        xAxis = renderAxes(xLinearScale, xAxis);
+
+        // updates circles with new x values
+        circlesGroup = renderCircles(circlesGroup, xLinearScale, chosenXAxis);
+
+        // updates tooltips with new info
+        circlesGroup = updateToolTip(chosenXAxis, circlesGroup);
+
+        // changes classes to change bold text
+        if (chosenXAxis === "num_albums") {
+          albumsLabel
+            .classed("active", true)
+            .classed("inactive", false);
+          hairLengthLabel
+            .classed("active", false)
+            .classed("inactive", true);
+        }
+        else {
+          albumsLabel
+            .classed("active", false)
+            .classed("inactive", true);
+          hairLengthLabel
+            .classed("active", true)
+            .classed("inactive", false);
+        }
+      }
+    });
     
     
       }).catch(function(error) {
@@ -168,7 +279,7 @@ d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
     
     
     
-});
+
 
 
       //exercise 12, day 3 code organization (functions and readability)
