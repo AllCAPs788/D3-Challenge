@@ -55,6 +55,7 @@ function renderAxes(newXScale, xAxis) {
   return xAxis;
 }
 
+
 //import csv
 
 d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
@@ -83,21 +84,11 @@ d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
   svg.append("g")
     .call(d3.axisLeft(y));
 
-  // Add dots
-  //function addDots(svg) {}
-  // svg.append('g')
-  //   .selectAll("dot")
-  //   .data(state_Data)
-  //   .enter()
-  //   .append("circle")
-  //     .attr("cx", function (d) { return x(d.GrLivArea); } )
-  //     .attr("cy", function (d) { return y(d.SalePrice); } )
-  //     .attr("r", 1.5)
-  //     .style("fill", "#69b3a2")
     
       hairData.forEach(function(data) {
         data.poverty = +data.poverty;
         data.healthcareLow = +data.healthcareLow;
+      // console.log(poverty)
       });
     
       // xLinearScale function above csv import
@@ -161,40 +152,23 @@ d3.csv("assets/data/state_income_csv.csv").then(function(state_Data, err) {
         .text("Lacks Healthcare (%)");
     
       // updateToolTip function above csv import
-      var circlesGroup = updateToolTip(chosenXAxis, circlesGroup);
-    
-      // x axis labels event listener
-      // labelsGroup.selectAll("text")
-      //   .on("click", function() {
-      //     // get value of selection
-      //     var value = d3.select(this).attr("value");
-      //     if (value !== chosenXAxis) {
-    
-    }).catch(function(error) {
-      console.log(error);
-    
-    
-    
+      var toolTip = d3.tip()
+    .attr("class", "tooltip")
+    .offset([80, -60])
+    .html(function(d) {
+      return (`${d.healthcareLow}<br>${label} ${d[chosenXAxis]}`);
     });
+      
+    
+    
+      }).catch(function(error) {
+        console.log(error);
+           
+  });
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    });
+});
 
 
       //exercise 12, day 3 code organization (functions and readability)
